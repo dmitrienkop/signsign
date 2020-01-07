@@ -1,27 +1,26 @@
 import 'dart:convert';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:http/http.dart' as http;
+import 'package:signsign/widgets/sign.dart';
 
 class SignSignApi {
   final apiUrl = 'https://signsign.ru/api/2.0';
-  http.Client _client;
+  final _client = http.Client();
 
-  SignSignApi() {
-    _client = http.Client();
+  List<Sign> parseSigns(String responseBody) {
+    final parsed = json.decode(responseBody);
+    return parsed['result'].map<Sign>((json) => Sign.fromJSON(json)).toList();
   }
 
-  Future<dynamic> get(LatLngBounds bounds) async {
+  Future<List<Sign>> get(LatLngBounds bounds) async {
     final topLeft = bounds.northWest;
     final bottomRight = bounds.southEast;
     final requestBody = jsonEncode({
-      "bounds": [
-        // [topLeft.latitude, topLeft.longitude],
-        // [bottomRight.latitude, bottomRight.longitude]
-        [55.03014612528671, 82.91469293429488],
-        [55.031427966316585, 82.92479413344499]
+      'bounds': [
+        [topLeft.latitude, topLeft.longitude],
+        [bottomRight.latitude, bottomRight.longitude]
       ]
     });
-    print('requestBody: ' + requestBody.toString());
     final res = await _client.post(
       '$apiUrl/get',
       headers: {
@@ -29,6 +28,6 @@ class SignSignApi {
       },
       body: requestBody
     );
-    return res.body;
+    return parseSigns(res.body);
   }
 }

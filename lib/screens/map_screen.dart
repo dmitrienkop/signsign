@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong/latlong.dart';
-import './api/signsign.dart';
-import './geo/crs.dart';
+import 'package:throttling/throttling.dart';
+import 'package:signsign/api/signsign.dart';
+import 'package:signsign/widgets/sign.dart';
+import 'package:signsign/geo/crs.dart';
 
-class MainScreen extends StatefulWidget {
-  MainScreen({Key key}) : super(key: key);
+class MapScreen extends StatefulWidget {
+  MapScreen({Key key}) : super(key: key);
 
   @override
-  _MainScreenState createState() => _MainScreenState();
+  _MapScreenState createState() => _MapScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  final mapboxId = 'mapbox.streets';
-  final mapboxToken = 'pk.eyJ1IjoiZG1pdHJpZW5rb3AiLCJhIjoiY2s1MHZvNWR6MDZrZjNzbXJkaHFkNTB4YSJ9.SHarKiCoS7pZLswCo52ACQ';
-  final tilesUrlTemplate = 'http://vec{s}.maps.yandex.net/tiles?l=map&v=4.55.2&z={z}&x={x}&y={y}&scale=2&lang=ru_RU';
-  MapController _mapController;
+class _MapScreenState extends State<MapScreen> {
+  static const _tilesUrlTemplate = 'http://vec{s}.maps.yandex.net/tiles?l=map&v=4.55.2&z={z}&x={x}&y={y}&scale=2&lang=ru_RU';
+  static const _requestDebounceTimeoutMs = 600;
+
+  final _requestDebounce = new Debouncing(duration: Duration(milliseconds: _requestDebounceTimeoutMs));
   double _zoom = 17.0;
-  LatLng _center = LatLng(55.030938, 82.923751);
+  LatLng _center = LatLng(55.021516, 82.917521);
   SignSignApi _api;
+  List<Sign> _signsList = [];
 
   @override
   void initState() {
     super.initState();
-    _mapController = MapController();
     _api = new SignSignApi();
   }
 
@@ -33,22 +35,26 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   _centerChangeHandler(LatLng newCenter, LatLngBounds newBounds) async {
-    // print('_centerChangeHandler: ' + newBounds.northWest.toString() + ' / ' + newBounds.southEast.toString());
-    // print('bounds: ' + newBounds.isValid.toString() + ' / ' + newBounds.);
-    final res = await _api.get(newBounds);
-    print('1res: ' + res.toString());
-    // TODO signs request
+    _center = newCenter;
+    _requestDebounce.debounce(() => _updateSignsList(newBounds));
+  }
+
+  _updateSignsList(LatLngBounds newBounds) async {
+    final newSignsList = await _api.get(newBounds);
+    setState(() {
+      _signsList = newSignsList;
+    });
   }
 
   _zoomChangeHandler(double newZoom) {
-    print('_zoomChangeHandler: ' + newZoom.toString());
-
+    _zoom = newZoom;
     // TODO show/hide zoom snackbar
   }
 
   @override
-  Widget build(BuildContext context) =>
-    Scaffold(
+  Widget build(BuildContext context) {
+    final markers = _signsList.map((sign) => sign.toMarker()).toList();
+    return Scaffold(
       body: Builder(
         builder: (BuildContext context) =>
           Center(
@@ -58,7 +64,7 @@ class _MainScreenState extends State<MainScreen> {
               children: <Widget>[
                 Expanded(
                   child: FlutterMap(
-                    key: Key('123'), // TODO rm debug key
+                    key: Key('1234'), // TODO rm debug key
                     options: MapOptions(
                       center: _center,
                       zoom: _zoom,
@@ -67,7 +73,10 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                     layers: [
                       TileLayerOptions(
-                        urlTemplate: tilesUrlTemplate,
+                        urlTemplate: _tilesUrlTemplate,
+                      ),
+                      MarkerLayerOptions(
+                        markers: markers
                       )
                     ],
                   ),
@@ -78,6 +87,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+}
 
 //     Scaffold.of(context).hideCurrentSnackBar(); // TODO rm debug
 //     Scaffold.of(context).showSnackBar(

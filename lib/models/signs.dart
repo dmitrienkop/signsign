@@ -1,6 +1,6 @@
 import 'dart:collection';
 import 'package:flutter/material.dart';
-import './sign.dart';
+import 'package:signsign/widgets/sign.dart';
 
 class SignsModel extends ChangeNotifier {
   final List<Sign> _signs = []; // TODO not dynamic
