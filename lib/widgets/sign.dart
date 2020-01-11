@@ -43,12 +43,19 @@ class Sign {
   final Map<String, SignIconParams> supportedIcons = {
     'default': SignIconParams(width: 20, height: 20, iconPath: 'lib/icons/default.png'),
     '2.1': SignIconParams(width: 25.0, height: 25.0, iconPath: 'lib/icons/2-1.png'),
+    '2.4': SignIconParams(width: 25.0, height: 23.0, iconPath: 'lib/icons/2-4.png'),
     '3.27': SignIconParams(width: 25.0, height: 26.0, iconPath: 'lib/icons/3-27.png'),
     '5.14': SignIconParams(width: 25.0, height: 25.0, iconPath: 'lib/icons/5-14.png'),
+    '5.16': SignIconParams(width: 25.0, height: 36.0, iconPath: 'lib/icons/5-16.png'),
+    '5.19.1': SignIconParams(width: 25.0, height: 25.0, iconPath: 'lib/icons/5-19-1.png'),
     '5.19.2': SignIconParams(width: 25.0, height: 25.0, iconPath: 'lib/icons/5-19-2.png'),
+    '6.4': SignIconParams(width: 25.0, height: 25.0, iconPath: 'lib/icons/6-4.png'),
+    '6.16': SignIconParams(width: 25.0, height: 11.0, iconPath: 'lib/icons/6-16.png'),
     '8.13': SignIconParams(width: 25.0, height: 25.0, iconPath: 'lib/icons/8-13.png'),
+    '8.2.1': SignIconParams(width: 25.0, height: 11.0, iconPath: 'lib/icons/8-2-3.png'),
     '8.2.3': SignIconParams(width: 14.0, height: 25.0, iconPath: 'lib/icons/8-2-3.png'),
     '8.2.4': SignIconParams(width: 14.0, height: 25.0, iconPath: 'lib/icons/8-2-4.png'),
+    '8.6.5': SignIconParams(width: 25.0, height: 12.0, iconPath: 'lib/icons/8-6-5.png'),
     '8.24': SignIconParams(width: 25.0, height: 12.0, iconPath: 'lib/icons/8-24.png'),
   };
 
@@ -64,6 +71,10 @@ class Sign {
     
   SignIconParams _getIconParams(String code) {
     final icon = supportedIcons[code];
+    if (icon == null) {
+      // TODO debug & add images
+      // print('!there is no image for sign: ' + code);
+    }
     return icon == null
       ? supportedIcons['default']
       : icon;
@@ -71,8 +82,6 @@ class Sign {
   
   Marker toMarker() {
     final iconParams = _getIconParams(code);
-    // print('code: ' + code);
-
     return Marker(
       width: iconParams.width,
       height: iconParams.height,

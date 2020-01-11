@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong/latlong.dart';
 import 'package:throttling/throttling.dart';
 import 'package:signsign/api/signsign.dart';
-import 'package:signsign/widgets/sign.dart';
 import 'package:signsign/geo/crs.dart';
 
 class MapScreen extends StatefulWidget {
@@ -14,14 +14,24 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  static const zoomSnapBarText = 'Для отображения дорожных знаков выберите более крупный масштаб';
   static const _tilesUrlTemplate = 'http://vec{s}.maps.yandex.net/tiles?l=map&v=4.55.2&z={z}&x={x}&y={y}&scale=2&lang=ru_RU';
   static const _requestDebounceTimeoutMs = 600;
 
   final _requestDebounce = new Debouncing(duration: Duration(milliseconds: _requestDebounceTimeoutMs));
-  double _zoom = 17.0;
+  final _minZoom = 5.0;
+  final _maxZoom = 19.0;
+  final _minVisibleSignsZoom = 17.0;
+  double _zoom = 15.0;
   LatLng _center = LatLng(55.021516, 82.917521);
   SignSignApi _api;
-  List<Sign> _signsList = [];
+  List<Marker> _markersList = [];
+  BuildContext _buildContext;
+  SnackBar _zoomSnackBar = SnackBar(
+    content: Text(zoomSnapBarText),
+    duration: Duration(days: 1),
+  );
+  bool _isShownZoomSnackBar = false;
 
   @override
   void initState() {
@@ -30,71 +40,97 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   _mapChangeHandler(MapPosition position, bool hasGesture) {
-    _centerChangeHandler(position.center, position.bounds);
+    _centerChangeHandler(position.center);
     _zoomChangeHandler(position.zoom);
+    _optionallyUpdateSignsList(position.zoom, position.bounds);
   }
 
-  _centerChangeHandler(LatLng newCenter, LatLngBounds newBounds) async {
-    _center = newCenter;
-    _requestDebounce.debounce(() => _updateSignsList(newBounds));
+  _optionallyUpdateSignsList(double zoom, LatLngBounds bounds) {
+    if (zoom >= _minVisibleSignsZoom) {
+      _requestDebounce.debounce(() async {
+        final signsList = await _api.get(bounds);
+        _safelySetStateWith(() {
+          _markersList = signsList.map((sign) => sign.toMarker()).toList();
+        });
+      });
+    }
   }
 
-  _updateSignsList(LatLngBounds newBounds) async {
-    final newSignsList = await _api.get(newBounds);
-    setState(() {
-      _signsList = newSignsList;
-    });
+  _centerChangeHandler(LatLng center) {
+    _center = center;
   }
 
-  _zoomChangeHandler(double newZoom) {
-    _zoom = newZoom;
-    // TODO show/hide zoom snackbar
+  _zoomChangeHandler(double zoom) {
+    _zoom = zoom;
+    
+    final isNeedToHideSigns = _zoom < _minVisibleSignsZoom;
+    if (isNeedToHideSigns) {
+      _safelySetStateWith(() {
+        _markersList = [];
+      });
+    }
+    _toggleZoomSnackBar(isNeedToHideSigns);
   }
+
+  _toggleZoomSnackBar(bool isSignsAreHidden) {
+    final isNeedToShow = isSignsAreHidden && !_isShownZoomSnackBar;
+    if (isNeedToShow) {
+      _safelySetStateWith(() {
+        Scaffold.of(_buildContext).showSnackBar(_zoomSnackBar);
+        _isShownZoomSnackBar = true;
+      });
+    }
+
+    final isNeedToHide = !isSignsAreHidden && _isShownZoomSnackBar;
+    if (isNeedToHide) {
+      _safelySetStateWith(() {
+        Scaffold.of(_buildContext).hideCurrentSnackBar();
+        _isShownZoomSnackBar = false;
+      });
+    }
+  }
+
+  _safelySetStateWith(Function cb) =>
+    SchedulerBinding.instance.addPostFrameCallback((_) =>
+        setState(cb));
 
   @override
   Widget build(BuildContext context) {
-    final markers = _signsList.map((sign) => sign.toMarker()).toList();
     return Scaffold(
       body: Builder(
-        builder: (BuildContext context) =>
-          Center(
+        builder: (BuildContext context) {
+          _buildContext = context;
+
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Expanded(
                   child: FlutterMap(
-                    key: Key('1234'), // TODO rm debug key
                     options: MapOptions(
                       center: _center,
                       zoom: _zoom,
                       crs: Epsg3395(),
-                      onPositionChanged: _mapChangeHandler
+                      onPositionChanged: _mapChangeHandler,
+                      minZoom: _minZoom,
+                      maxZoom: _maxZoom,
                     ),
                     layers: [
                       TileLayerOptions(
                         urlTemplate: _tilesUrlTemplate,
                       ),
                       MarkerLayerOptions(
-                        markers: markers
-                      )
+                        markers: _markersList,
+                      ),
                     ],
                   ),
                 ),
               ],
             )
-          )
+          );
+        }
       ),
     );
   }
 }
-
-//     Scaffold.of(context).hideCurrentSnackBar(); // TODO rm debug
-//     Scaffold.of(context).showSnackBar(
-//       SnackBar(
-//         content: Text('Для отображения дорожных знаков выберите более крупный масштаб'),
-//         duration: Duration(days: 1),
-//       )
-//     );
-//   },
-// ),
