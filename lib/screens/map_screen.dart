@@ -5,6 +5,7 @@ import 'package:latlong/latlong.dart';
 import 'package:throttling/throttling.dart';
 import 'package:signsign/api/signsign.dart';
 import 'package:signsign/geo/crs.dart';
+import 'package:signsign/helpers/location.dart';
 
 class MapScreen extends StatefulWidget {
   MapScreen({Key key}) : super(key: key);
@@ -32,11 +33,21 @@ class _MapScreenState extends State<MapScreen> {
     duration: Duration(days: 1),
   );
   bool _isShownZoomSnackBar = false;
+  MapController _mapController;
 
   @override
   void initState() {
     super.initState();
     _api = new SignSignApi();
+    _mapController = MapController();
+    _moveToCurrentLocation(); // TODO restore previous state if available
+  }
+
+  _moveToCurrentLocation() async {
+    final location = await getCurrentLocation();
+    if (location != null) {
+      _mapController.move(LatLng(location.latitude, location.longitude), _zoom);
+    }
   }
 
   _mapChangeHandler(MapPosition position, bool hasGesture) {
@@ -91,8 +102,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   _safelySetStateWith(Function cb) =>
-    SchedulerBinding.instance.addPostFrameCallback((_) =>
-        setState(cb));
+    SchedulerBinding.instance.addPostFrameCallback((_) => setState(cb));
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +118,7 @@ class _MapScreenState extends State<MapScreen> {
               children: <Widget>[
                 Expanded(
                   child: FlutterMap(
+                    mapController: _mapController,
                     options: MapOptions(
                       center: _center,
                       zoom: _zoom,
