@@ -40,7 +40,7 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     _api = new SignSignApi();
     _mapController = MapController();
-    _moveToCurrentLocation(); // TODO restore previous state if available
+    _moveToCurrentLocation();
   }
 
   _moveToCurrentLocation() async {

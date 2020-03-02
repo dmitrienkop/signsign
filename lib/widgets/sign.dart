@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:latlong/latlong.dart';
 import 'package:signsign/icons/icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SignCoords {
   double lon;
@@ -44,9 +45,11 @@ class Sign {
     if (iconParams == null) {
       code = 'default';
       iconParams = supportedIcons['default'];
+
+      print("$code not found");
     }
 
-    iconParams.iconPath = 'lib/icons/$code.png';
+    iconParams.iconPath = 'assets/signs/$code.svg';
     return iconParams;
   }
   
@@ -59,9 +62,10 @@ class Sign {
       builder: (ctx) => Container(
         child: Transform.rotate(
           angle: angle.toDouble() * math.pi / 180,
-          child: Image.asset(
+          child: SvgPicture.asset(
             iconParams.iconPath,
-            fit: BoxFit.cover,
+            width: iconParams.width,
+            height: iconParams.height,
           ),
         ),
       ),
