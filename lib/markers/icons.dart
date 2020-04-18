@@ -1,14 +1,4 @@
-class SignIconParams {
-  final double width;
-  final double height;
-  String iconPath;
-
-  SignIconParams({
-    this.width,
-    this.height,
-    this.iconPath
-  });
-}
+import 'package:signsign/markers/sign_marker.dart';
 
 final Map<String, SignIconParams> supportedIcons = {
   'default': SignIconParams(width: 20, height: 20),

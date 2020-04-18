@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong/latlong.dart';
+import 'package:signsign/markers/sign_marker.dart';
+import 'package:signsign/markers/sign_markers_manager.dart';
+import 'package:signsign/widgets/sign_card.dart';
 import 'package:throttling/throttling.dart';
 import 'package:signsign/api/signsign.dart';
 import 'package:signsign/geo/crs.dart';
@@ -24,24 +27,41 @@ class _MapScreenState extends State<MapScreen> {
   final _maxZoom = 19.0;
   final _minVisibleSignsZoom = 17.0;
   double _zoom = 15.0;
-  LatLng _center = LatLng(55.021516, 82.917521);
+  LatLng _center = LatLng(56.454658, 84.976087);
+  LatLngBounds _bounds;
   SignSignApi _api;
-  List<Marker> _markersList = [];
   BuildContext _buildContext;
   SnackBar _zoomSnackBar = SnackBar(
-    content: Text(zoomSnapBarText),
+    content: Text(
+      zoomSnapBarText,
+      style: TextStyle(
+        color: Colors.black
+      ),
+    ),
     duration: Duration(days: 1),
+    backgroundColor: Colors.white
   );
   bool _isShownZoomSnackBar = false;
   MapController _mapController;
+  SignMarkersManager _markersManager;
+  SignModel _activeSignModel;
 
   @override
   void initState() {
     super.initState();
     _api = new SignSignApi();
     _mapController = MapController();
+    _markersManager = SignMarkersManager(_markerTapHandler);
     _moveToCurrentLocation();
   }
+
+  _markerTapHandler(SignModel markerModel) =>
+    _toggleSignCard(markerModel);
+
+  _toggleSignCard([SignModel markerModel]) =>
+      setState(() {
+        _activeSignModel = markerModel;
+      });
 
   _moveToCurrentLocation() async {
     final location = await getCurrentLocation();
@@ -51,70 +71,81 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   _mapChangeHandler(MapPosition position, bool hasGesture) {
-    _centerChangeHandler(position.center);
-    _zoomChangeHandler(position.zoom);
-    _optionallyUpdateSignsList(position.zoom, position.bounds);
+    _center = position.center;
+    _zoom = position.zoom;
+    _bounds = position.bounds;
+
+    _zoomChangeHandler();
+    _optionallyUpdateSignsList();
   }
 
-  _optionallyUpdateSignsList(double zoom, LatLngBounds bounds) {
-    if (zoom >= _minVisibleSignsZoom) {
+  _mapTapHandler(LatLng point) {
+    if (_activeSignModel != null) {
+      _toggleSignCard();
+    }
+  }
+
+  _optionallyUpdateSignsList() {
+    if (_zoom >= _minVisibleSignsZoom) {
       _requestDebounce.debounce(() async {
-        final signsList = await _api.get(bounds);
-        _safelySetStateWith(() {
-          _markersList = signsList.map((sign) => sign.toMarker()).toList();
+        final markersAPIResponse = await _api.get(_bounds);
+        setState(() {
+          _markersManager.updateFromAPIResponse(markersAPIResponse);
         });
       });
     }
   }
 
-  _centerChangeHandler(LatLng center) {
-    _center = center;
-  }
-
-  _zoomChangeHandler(double zoom) {
-    _zoom = zoom;
-    
+  _zoomChangeHandler() {
     final isNeedToHideSigns = _zoom < _minVisibleSignsZoom;
+
     if (isNeedToHideSigns) {
-      _safelySetStateWith(() {
-        _markersList = [];
-      });
+      if (_isShownZoomSnackBar) {
+        _toggleSignCard();
+      }
+
+      if (!_markersManager.isEmpty()) {
+        setState(() {
+          _markersManager.clean();
+        });
+      }
     }
+
     _toggleZoomSnackBar(isNeedToHideSigns);
   }
 
   _toggleZoomSnackBar(bool isSignsAreHidden) {
     final isNeedToShow = isSignsAreHidden && !_isShownZoomSnackBar;
     if (isNeedToShow) {
+      _isShownZoomSnackBar = true;
       _safelySetStateWith(() {
         Scaffold.of(_buildContext).showSnackBar(_zoomSnackBar);
-        _isShownZoomSnackBar = true;
       });
     }
 
     final isNeedToHide = !isSignsAreHidden && _isShownZoomSnackBar;
     if (isNeedToHide) {
-      _safelySetStateWith(() {
+      _isShownZoomSnackBar = false;
+      setState(() {
         Scaffold.of(_buildContext).hideCurrentSnackBar();
-        _isShownZoomSnackBar = false;
       });
     }
   }
 
   _safelySetStateWith(Function cb) =>
     SchedulerBinding.instance.addPostFrameCallback((_) => setState(cb));
-
+    
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Builder(
-        builder: (BuildContext context) {
-          _buildContext = context;
+  Widget build(BuildContext context) =>
+    Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            _buildContext = context;
+            double height = MediaQuery.of(context).size.height;
 
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            return Column(
               children: <Widget>[
                 Expanded(
                   child: FlutterMap(
@@ -124,6 +155,7 @@ class _MapScreenState extends State<MapScreen> {
                       zoom: _zoom,
                       crs: Epsg3395(),
                       onPositionChanged: _mapChangeHandler,
+                      onTap: _mapTapHandler,
                       minZoom: _minZoom,
                       maxZoom: _maxZoom,
                     ),
@@ -132,16 +164,25 @@ class _MapScreenState extends State<MapScreen> {
                         urlTemplate: _tilesUrlTemplate,
                       ),
                       MarkerLayerOptions(
-                        markers: _markersList,
+                        markers: _markersManager.getMarkersList(),
                       ),
                     ],
                   ),
                 ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: height / 3,
+                  ),
+                  child: SingleChildScrollView(
+                    child: _activeSignModel == null
+                      ? null
+                      : SignCard(_activeSignModel),
+                  ),
+                )
               ],
-            )
-          );
-        }
+            );
+          },
+        ),
       ),
     );
-  }
 }
