@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:http/http.dart' as http;
-// import 'package:signsign/widgets/sign_marker.dart';
 
 class SignSignApi {
   final apiUrl = 'https://signsign.ru/api/2.0';
