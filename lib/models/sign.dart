@@ -5,24 +5,24 @@ import 'package:flutter_svg/svg.dart';
 import 'package:latlong/latlong.dart';
 import 'package:signsign/models/sign_icon.dart';
 
-class SignMarkerCoords {
+typedef SignMarkerTapHandler = void Function(Sign sign);
+
+class SignCoords {
   double lon;
   double lat;
 
-  SignMarkerCoords({
+  SignCoords({
     this.lon,
     this.lat
   });
 }
-
-typedef SignMarkerTapHandler = void Function(Sign sign);
 
 class Sign {
   String id;
   String code;
   String title;
   String description;
-  SignMarkerCoords coords;
+  SignCoords coords;
   int angle;
   bool isActive = false;
 
@@ -41,18 +41,17 @@ class Sign {
       code = json['css'],
       title = json['title'],
       description = json['description'],
-      coords = SignMarkerCoords(
+      coords = SignCoords(
         lat: json['coords']['lat'],
         lon: json['coords']['lon'],
       ),
       angle = int.parse(json['angle']);
   
   Marker toMarker(SignMarkerTapHandler tapHandler) {
-    final iconParams = getMarkerIconParams(code);
-
+    final icon = getSignIcon(code);
     return Marker(
-      width: iconParams.width,
-      height: iconParams.height,
+      width: icon.width,
+      height: icon.height,
       point: LatLng(
         coords.lat,
         coords.lon
@@ -65,9 +64,9 @@ class Sign {
               tapHandler(this);
             },
             child: SvgPicture.asset(
-              iconParams.iconPath,
-              width: iconParams.width,
-              height: iconParams.height,
+              icon.iconPath,
+              width: icon.width,
+              height: icon.height,
             ),
           ),
         ),
@@ -75,7 +74,7 @@ class Sign {
     );
   }
 
-  SignIcon getMarkerIconParams(String code) {
+  SignIcon getSignIcon(String code) {
     SignIcon iconParams = supportedIcons[code];
     if (iconParams == null) {
       code = 'default';
