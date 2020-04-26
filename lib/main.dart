@@ -7,7 +7,6 @@ class SignSign extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
     MaterialApp(
-      key: Key('0'),
       title: 'SignSign',
       home: MapScreen(),
     );
