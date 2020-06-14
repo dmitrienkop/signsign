@@ -1,76 +1,119 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:signsign/components/sign_card.dart';
-import 'package:signsign/models/crs.dart';
+import 'package:signsign/components/info_modal.dart';
+import 'package:signsign/components/map_control/map_control.dart';
+import 'package:signsign/components/map_card/sign_card.dart';
+import 'package:signsign/components/map_card/zoom_card.dart';
+import 'package:signsign/components/signsign_constants.dart';
+import 'package:signsign/components/signsign_map.dart';
+import 'package:signsign/components/map_control/zoom_control.dart';
 import 'package:signsign/store/signsign_store.dart';
-import 'package:signsign/components/zoom_card.dart';
 
 final store = SignSignStore();
 
-const tilesUrlTemplate = 'http://vec{s}.maps.yandex.net/tiles?l=map&v=4.55.2&z={z}&x={x}&y={y}&scale=2&lang=ru_RU';
-const minZoom = 5.0;
-const maxZoom = 19.0;
+class MapScreen extends StatefulWidget {
+  @override
+  _MapScreenState createState() => _MapScreenState();
+}
 
-class MapScreen extends StatelessWidget {
+class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) =>
     Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) =>
-            Column(
-              children: <Widget>[
-                Expanded(
-                  child: Observer(
-                    builder: (_) =>
-                      FlutterMap(
-                        mapController: store.mapController,
-                        options: MapOptions(
-                          center: store.center,
-                          zoom: store.zoom,
-                          crs: Epsg3395(),
-                          onPositionChanged: store.handleMapChange,
-                          onTap: store.handleMapTap,
-                          minZoom: minZoom,
-                          maxZoom: maxZoom,
-                        ),
-                        layers: [
-                          TileLayerOptions(
-                            urlTemplate: tilesUrlTemplate,
-                          ),
-                          MarkerLayerOptions(
+      body: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final mediaQuery = MediaQuery.of(context);
+            final constants = SignSignConstants.of(context);
+            return Observer(
+              builder: (_) => Stack(
+                children: <Widget>[
+                  Container(
+                    color: Colors.green,
+                    child: Column(
+                      children: <Widget>[
+                        Expanded(
+                          child: SignSignMap(
+                            mapController: store.mapController,
+                            center: store.center,
+                            zoom: store.zoom,
+                            handleMapChange: store.handleMapChange,
+                            handleMapTap: store.handleMapTap,
                             markers: store.markers,
+                            isShownSignCard: store.activeSign != null,
                           ),
-                        ],
-                      ),
-                  ),
-                ),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height / 3,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Observer(
-                      builder: (_) => Column(
-                        children: <Widget>[
-                          Visibility(
-                            child: ZoomCard(),
-                            visible: store.isNeedToShowZoomCard
+                        ),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: mediaQuery.size.height / 3,
                           ),
-                          Visibility(
-                            child: SignCard(signMarkerModel: store.activeSign),
-                            visible: store.activeSign != null
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: <Widget>[
+                                Visibility(
+                                  child: ZoomCard(),
+                                  visible: store.isNeedToShowZoomCard && !store.showInfoModal,
+                                ),
+                                Visibility(
+                                  child: SignCard(signMarkerModel: store.activeSign),
+                                  visible: store.activeSign != null && !store.showInfoModal,
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
+                  Visibility(
+                    child: Positioned(
+                      right: constants.screenEdgeOffset,
+                      top: mediaQuery.padding.top + constants.screenEdgeOffset,
+                      child: MapControl(
+                        height: constants.mapControlSize,
+                        width: constants.mapControlSize,
+                        assetName: 'assets/controls/info.svg',
+                        onTap: store.toggleInfoModalVisibility,
+                      ),
+                    ),
+                    visible: !store.showInfoModal,
+                  ),
+                  Visibility(
+                    child: Positioned(
+                      right: constants.screenEdgeOffset,
+                      top: (mediaQuery.size.height / 2) - (constants.zoomControlHeight / 2),
+                      child: ZoomControl(
+                        onZoomIn: () => store.animatedMapMove(store.center, store.zoom + 1, this),
+                        onZoomOut: () => store.animatedMapMove(store.center, store.zoom - 1, this),
+                        isMinZoom: store.zoom == constants.minZoom,
+                        isMaxZoom: store.zoom == constants.maxZoom,
+                      ),
+                    ),
+                    visible: !store.showInfoModal,
+                  ),
+                  Visibility(
+                    child: Positioned(
+                      bottom: store.isNeedToShowZoomCard
+                        ? constants.zoomCardHeight + constants.screenEdgeOffset
+                        : mediaQuery.padding.bottom + constants.screenEdgeOffset,
+                      right: constants.screenEdgeOffset,
+                      child: MapControl(
+                        height: constants.mapControlSize,
+                        width: constants.mapControlSize,
+                        assetName: 'assets/controls/location.svg',
+                        onTap: () => store.moveMapToCurrentLocation(this),
+                        disabled: !store.hasLocationPermission,
+                      ),
+                    ),
+                    visible: store.activeSign == null && !store.showInfoModal,
+                  ),
+                  InfoModal(
+                    isVisible: store.showInfoModal,
+                    onClose: store.toggleInfoModalVisibility,
+                  ),
+                ],
+              )
+            );
+          },
         ),
-      ),
     );
 }

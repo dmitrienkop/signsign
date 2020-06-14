@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:signsign/models/sign.dart';
-import 'package:signsign/components/map_card.dart';
+import 'package:signsign/components/map_card/map_card.dart';
 
 class SignCard extends StatelessWidget {
   final Sign signMarkerModel;

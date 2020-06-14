@@ -8,9 +8,12 @@ class MapCard extends StatelessWidget {
   // @override
   Widget build(BuildContext context) =>
     IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+      child: Container(
+        color: Colors.white,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
       ),
     );
 }

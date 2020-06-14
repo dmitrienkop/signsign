@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:latlong/latlong.dart';
+import 'package:location/location.dart';
 import 'package:mobx/mobx.dart';
 import 'package:signsign/helpers/location.dart';
 import 'package:signsign/models/sign.dart';
@@ -16,11 +18,11 @@ final requestDebounce = new Debouncing(duration: Duration(milliseconds: requestD
 class SignSignStore = _SignSignStore with _$SignSignStore;
 
 abstract class _SignSignStore with Store {
-  /* State */
+  bool initialLocationWasSet = false;
+  bool initialPositionSetWasHandled = false;
 
-  bool initialized = false;
+  Location location = new Location();
 
-  // Map
   @observable
   MapController mapController = MapController();
 
@@ -33,33 +35,53 @@ abstract class _SignSignStore with Store {
   @observable
   LatLngBounds bounds;
 
-  // UI
   @observable
   bool isNeedToShowZoomCard = false;
 
-  // Signs
   @observable
   List<Marker> markers = [];
 
   @observable
   Sign activeSign;
 
-  /* Actions */
+  @observable
+  bool hasLocationPermission = false;
+
+  @observable
+  bool showInfoModal = false;
+
+  @action
+  toggleInfoModalVisibility() {
+    showInfoModal = !showInfoModal;
+  }
+
+  @action
+  moveMapToCurrentLocation([TickerProvider tickerProvider]) async {
+    final currentLocation = await location.getLocation();
+    hasLocationPermission = await location.hasPermission();
+    if (currentLocation == null) {
+      return false;
+    }
+
+    final newCenter = LatLng(currentLocation.latitude, currentLocation.longitude);
+    if (tickerProvider == null) {
+      mapController.move(newCenter, zoom);
+    } else {
+      animatedMapMove(newCenter, zoom, tickerProvider);
+    }
+    center = newCenter;
+  }
 
   @action
   handleMapChange(MapPosition position, bool hasGesture) {
-    if (!initialized) {
-      initialized = true;
-      mapController.onReady.then((_) async {
-        final location = await getCurrentLocation();
-        if (location != null) {
-          mapController.move(LatLng(location.latitude, location.longitude), zoom);
-        }
-      });
+    if (!initialLocationWasSet) {
+      initialLocationWasSet = true;
+      return mapController.onReady
+        .then((_) => moveMapToCurrentLocation());
     }
 
-    if (!hasGesture) {
-      // skip initial/programatical map change
+    if (!hasGesture && !initialPositionSetWasHandled) {
+      initialPositionSetWasHandled = true;
       return false;
     }
 
@@ -67,6 +89,41 @@ abstract class _SignSignStore with Store {
     zoom = position.zoom;
     bounds = position.bounds;
 
+    actualizeSignsState();
+  }
+
+  @action animatedMapMove(LatLng newCenter, double newZoom, TickerProvider tickerProvider) {
+    final newNormZoom = newZoom.roundToDouble();
+    final latTween = Tween(begin: center.latitude, end: newCenter.latitude);
+    final lonTween = Tween(begin: center.longitude, end: newCenter.longitude);
+    final zoomTween = Tween(begin: zoom, end: newNormZoom);
+    final animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: tickerProvider
+    );
+    zoom = newNormZoom;
+    Animation<double> animation = CurvedAnimation(
+      parent: animationController,
+      curve: Curves.linear,
+    );
+    animationController.addListener(() {
+      mapController.move(
+        LatLng(latTween.evaluate(animation), lonTween.evaluate(animation)),
+        zoomTween.evaluate(animation),
+      );
+    });
+    animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        animationController.dispose();
+      } else if (status == AnimationStatus.dismissed) {
+        animationController.dispose();
+      }
+    });
+    animationController.forward();
+  }
+
+  @action
+  actualizeSignsState() {
     final showSigns = zoom >= minVisibleSignsZoom;
     isNeedToShowZoomCard = !showSigns;
     activeSign = showSigns ? activeSign : null;

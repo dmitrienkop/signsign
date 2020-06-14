@@ -131,14 +131,91 @@ mixin _$SignSignStore on _SignSignStore, Store {
     }, _$activeSignAtom, name: '${_$activeSignAtom.name}_set');
   }
 
+  final _$hasLocationPermissionAtom =
+      Atom(name: '_SignSignStore.hasLocationPermission');
+
+  @override
+  bool get hasLocationPermission {
+    _$hasLocationPermissionAtom.context
+        .enforceReadPolicy(_$hasLocationPermissionAtom);
+    _$hasLocationPermissionAtom.reportObserved();
+    return super.hasLocationPermission;
+  }
+
+  @override
+  set hasLocationPermission(bool value) {
+    _$hasLocationPermissionAtom.context.conditionallyRunInAction(() {
+      super.hasLocationPermission = value;
+      _$hasLocationPermissionAtom.reportChanged();
+    }, _$hasLocationPermissionAtom,
+        name: '${_$hasLocationPermissionAtom.name}_set');
+  }
+
+  final _$showInfoModalAtom = Atom(name: '_SignSignStore.showInfoModal');
+
+  @override
+  bool get showInfoModal {
+    _$showInfoModalAtom.context.enforceReadPolicy(_$showInfoModalAtom);
+    _$showInfoModalAtom.reportObserved();
+    return super.showInfoModal;
+  }
+
+  @override
+  set showInfoModal(bool value) {
+    _$showInfoModalAtom.context.conditionallyRunInAction(() {
+      super.showInfoModal = value;
+      _$showInfoModalAtom.reportChanged();
+    }, _$showInfoModalAtom, name: '${_$showInfoModalAtom.name}_set');
+  }
+
+  final _$moveMapToCurrentLocationAsyncAction =
+      AsyncAction('moveMapToCurrentLocation');
+
+  @override
+  Future moveMapToCurrentLocation([TickerProvider tickerProvider]) {
+    return _$moveMapToCurrentLocationAsyncAction
+        .run(() => super.moveMapToCurrentLocation(tickerProvider));
+  }
+
   final _$_SignSignStoreActionController =
       ActionController(name: '_SignSignStore');
+
+  @override
+  dynamic toggleInfoModalVisibility() {
+    final _$actionInfo = _$_SignSignStoreActionController.startAction();
+    try {
+      return super.toggleInfoModalVisibility();
+    } finally {
+      _$_SignSignStoreActionController.endAction(_$actionInfo);
+    }
+  }
 
   @override
   dynamic handleMapChange(MapPosition position, bool hasGesture) {
     final _$actionInfo = _$_SignSignStoreActionController.startAction();
     try {
       return super.handleMapChange(position, hasGesture);
+    } finally {
+      _$_SignSignStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
+  dynamic animatedMapMove(
+      LatLng newCenter, double newZoom, TickerProvider tickerProvider) {
+    final _$actionInfo = _$_SignSignStoreActionController.startAction();
+    try {
+      return super.animatedMapMove(newCenter, newZoom, tickerProvider);
+    } finally {
+      _$_SignSignStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
+  dynamic actualizeSignsState() {
+    final _$actionInfo = _$_SignSignStoreActionController.startAction();
+    try {
+      return super.actualizeSignsState();
     } finally {
       _$_SignSignStoreActionController.endAction(_$actionInfo);
     }
@@ -167,7 +244,7 @@ mixin _$SignSignStore on _SignSignStore, Store {
   @override
   String toString() {
     final string =
-        'mapController: ${mapController.toString()},center: ${center.toString()},zoom: ${zoom.toString()},bounds: ${bounds.toString()},isNeedToShowZoomCard: ${isNeedToShowZoomCard.toString()},markers: ${markers.toString()},activeSign: ${activeSign.toString()}';
+        'mapController: ${mapController.toString()},center: ${center.toString()},zoom: ${zoom.toString()},bounds: ${bounds.toString()},isNeedToShowZoomCard: ${isNeedToShowZoomCard.toString()},markers: ${markers.toString()},activeSign: ${activeSign.toString()},hasLocationPermission: ${hasLocationPermission.toString()},showInfoModal: ${showInfoModal.toString()}';
     return '{$string}';
   }
 }
