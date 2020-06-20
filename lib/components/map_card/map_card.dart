@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:signsign/components/signsign_constants.dart';
 
 class MapCard extends StatelessWidget {
   final List<Widget> children;
@@ -9,10 +10,14 @@ class MapCard extends StatelessWidget {
   Widget build(BuildContext context) =>
     IntrinsicHeight(
       child: Container(
-        color: Colors.white,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
+        decoration: BoxDecoration(
+          color: Colors.white,
+        ),
+        child: Container(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
         ),
       ),
     );

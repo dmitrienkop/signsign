@@ -82,7 +82,7 @@ abstract class _SignSignStore with Store {
 
     if (!hasGesture && !initialPositionSetWasHandled) {
       initialPositionSetWasHandled = true;
-      return false;
+      return actualizeSignsState();
     }
 
     center = position.center;

@@ -28,7 +28,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               builder: (_) => Stack(
                 children: <Widget>[
                   Container(
-                    color: Colors.green,
+                    color: Colors.white,
                     child: Column(
                       children: <Widget>[
                         Expanded(

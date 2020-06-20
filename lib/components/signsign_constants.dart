@@ -7,7 +7,7 @@ class SignSignConstants extends InheritedWidget {
   // layout constants
   final zoomCardHeight = 80.0;
   final screenEdgeOffset = 16.0;
-  final cardPadding = 20.0;
+  final cardPadding = 16.0;
   final mapControlSize = 38.0;
   final zoomControlHeight = 100.0;
   final elementBorderRadius = 8.0;

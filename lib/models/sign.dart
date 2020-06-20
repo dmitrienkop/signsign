@@ -20,6 +20,7 @@ class SignCoords {
 class Sign {
   String id;
   String code;
+  String css;
   String title;
   String description;
   SignCoords coords;
@@ -29,6 +30,7 @@ class Sign {
   Sign({
     this.id,
     this.code,
+    this.css,
     this.title,
     this.description,
     this.coords,
@@ -38,7 +40,8 @@ class Sign {
 
   Sign.fromJSON(Map<String, dynamic> json)
     : id = json['id'],
-      code = json['css'],
+      code = json['code'],
+      css = json['css'],
       title = json['title'],
       description = json['description'],
       coords = SignCoords(
@@ -48,7 +51,7 @@ class Sign {
       angle = int.parse(json['angle']);
   
   Marker toMarker(SignMarkerTapHandler tapHandler) {
-    final icon = getSignIcon(code);
+    final icon = getSignIcon(css);
     return Marker(
       width: icon.width,
       height: icon.height,
@@ -74,13 +77,13 @@ class Sign {
     );
   }
 
-  SignIcon getSignIcon(String code) {
-    SignIcon iconParams = supportedIcons[code];
+  SignIcon getSignIcon(String css) {
+    SignIcon iconParams = supportedIcons[css];
     if (iconParams == null) {
-      code = 'default';
+      css = 'default';
       iconParams = supportedIcons['default'];
     }
-    iconParams.iconPath = 'assets/signs/$code.svg';
+    iconParams.iconPath = 'assets/signs/$css.svg';
     return iconParams;
   }
 }
