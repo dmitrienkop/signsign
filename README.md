@@ -1,10 +1,26 @@
-# signsign
+# signsign mobile client
 
-Roadmap:
+## Roadmap
 
+* improved UI
+    * card shadows
+    * card gradients
 * Restore previous state (if available)
-* Map controls: zoom, position
 * Android (splash: https://medium.com/flutter-community/flutter-2019-real-splash-screens-tutorial-16078660c7a1)
-* Improved UI
+* tests
 
 Latest release date – 01.06.2020
+
+## Development
+
+### Runing generators (modx dart)
+
+once
+```
+flutter packages pub run build_runner build
+```
+
+in watch mode
+```
+flutter packages pub run build_runner watch
+```
