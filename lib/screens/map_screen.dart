@@ -42,20 +42,80 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                             isShownSignCard: store.activeSign != null,
                           ),
                         ),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: mediaQuery.size.height / 3,
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: [BoxShadow(
+                              blurRadius: 14.0,
+                              color: Color.fromRGBO(0, 0, 0, 0.2),
+                              offset: Offset(0, 4),
+                            )],
                           ),
-                          child: SingleChildScrollView(
-                            child: Column(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: mediaQuery.size.height / 3,
+                            ),
+                            child: Stack(
                               children: <Widget>[
-                                Visibility(
-                                  child: ZoomCard(),
-                                  visible: store.isNeedToShowZoomCard && !store.showInfoModal,
+                                SingleChildScrollView(
+                                  child: Column(
+                                    children: <Widget>[
+                                      Visibility(
+                                        child: ZoomCard(),
+                                        visible: store.isNeedToShowZoomCard
+                                          && !store.showInfoModal,
+                                      ),
+                                      Visibility(
+                                        child: SignCard(signMarkerModel: store.activeSign),
+                                        visible: store.activeSign != null
+                                          && !store.showInfoModal,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 Visibility(
-                                  child: SignCard(signMarkerModel: store.activeSign),
-                                  visible: store.activeSign != null && !store.showInfoModal,
+                                  child: Stack(
+                                    children: <Widget>[
+                                      Positioned(
+                                        left: 0,
+                                        right: 0,
+                                        top: 0,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.white,
+                                                Colors.white.withOpacity(0.0),
+                                              ],
+                                            ),
+                                          ),
+                                          height: 18,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.bottomCenter,
+                                              end: Alignment.topCenter,
+                                              colors: [
+                                                Colors.white,
+                                                Colors.white.withOpacity(0.0),
+                                              ],
+                                            ),
+                                          ),
+                                          height: 18,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  visible: store.activeSign != null
+                                    && !store.showInfoModal,
                                 ),
                               ],
                             ),
@@ -104,7 +164,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         disabled: !store.hasLocationPermission,
                       ),
                     ),
-                    visible: store.activeSign == null && !store.showInfoModal,
+                    visible: store.activeSign == null
+                      && !store.showInfoModal,
                   ),
                   InfoModal(
                     isVisible: store.showInfoModal,

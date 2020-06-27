@@ -2,10 +2,6 @@
 
 ## Roadmap
 
-* improved UI
-    * card shadows
-    * card gradients
-* Restore previous state (if available)
 * Android (splash: https://medium.com/flutter-community/flutter-2019-real-splash-screens-tutorial-16078660c7a1)
 * tests
 
