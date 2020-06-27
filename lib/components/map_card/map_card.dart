@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:signsign/components/signsign_constants.dart';
 
 class MapCard extends StatelessWidget {
   final List<Widget> children;
